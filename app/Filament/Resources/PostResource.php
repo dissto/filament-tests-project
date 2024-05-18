@@ -25,14 +25,14 @@ class PostResource extends Resource
     {
         return $form
             ->schema([
-                static::getNameFormField(),
-                static::getSlugFormField(),
-                static::getContentFormField(),
-                static::getPublishedAtFormField(),
+                static::getNameField(),
+                static::getSlugField(),
+                static::getContentField(),
+                static::getPublishedAtField(),
             ]);
     }
 
-    public static function getNameFormField(): TextInput
+    public static function getNameField(): TextInput
     {
         return TextInput::make('title')
             ->label('Title')
@@ -41,20 +41,20 @@ class PostResource extends Resource
             ->required();
     }
 
-    public static function getSlugFormField(): TextInput
+    public static function getSlugField(): TextInput
     {
         return TextInput::make('slug')
             ->unique(ignoreRecord: true)
             ->required();
     }
 
-    public static function getContentFormField(): RichEditor
+    public static function getContentField(): RichEditor
     {
         return RichEditor::make('content')
             ->required();
     }
 
-    public static function getPublishedAtFormField(): DateTimePicker
+    public static function getPublishedAtField(): DateTimePicker
     {
         return DateTimePicker::make('published_at')
             ->default(now())
