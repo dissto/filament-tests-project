@@ -1,9 +1,14 @@
 <?php
 
-namespace App\Filament\Resources;
+namespace App\Filament\Clusters\Posts\Resources;
 
-use App\Filament\Resources\PostResource\Pages;
+use App\Filament\Clusters\Posts;
+use App\Filament\Clusters\Posts\Resources\PostResource\Pages\CreatePost;
+use App\Filament\Clusters\Posts\Resources\PostResource\Pages\EditPost;
+use App\Filament\Clusters\Posts\Resources\PostResource\Pages\ListPosts;
+use App\Filament\Clusters\Posts\Resources\PostResource\RelationManagers\CommentsRelationManager;
 use App\Models\Post;
+use App\Traits\HasTimestampColumns;
 use Filament\Forms\Components\DateTimePicker;
 use Filament\Forms\Components\RichEditor;
 use Filament\Forms\Components\TextInput;
@@ -17,9 +22,13 @@ use Illuminate\Database\Eloquent\SoftDeletingScope;
 
 class PostResource extends Resource
 {
+    use HasTimestampColumns;
+
     protected static ?string $model = Post::class;
 
     protected static ?string $navigationIcon = 'heroicon-o-rectangle-stack';
+
+    protected static ?string $cluster = Posts::class;
 
     public static function form(Form $form): Form
     {
@@ -61,6 +70,11 @@ class PostResource extends Resource
             ->label('Publish at');
     }
 
+    //    public static function getCluster(): ?string
+    //    {
+    //        return config('project.use_clusters') ? Posts::class : null;
+    //    }
+
     public static function getEloquentQuery(): Builder
     {
         return parent::getEloquentQuery()
@@ -72,32 +86,39 @@ class PostResource extends Resource
     public static function getPages(): array
     {
         return [
-            'index' => Pages\ListPosts::route('/'),
-            'create' => Pages\CreatePost::route('/create'),
-            'edit' => Pages\EditPost::route('/{record}/edit'),
+            'index' => ListPosts::route('/'),
+            'create' => CreatePost::route('/create'),
+            'edit' => EditPost::route('/{record}/edit'),
         ];
     }
 
     public static function getRelations(): array
     {
         return [
-            //
+            CommentsRelationManager::class,
         ];
     }
 
     public static function table(Table $table): Table
     {
         return $table
+            ->modifyQueryUsing(function (Builder $query) {
+                $query->withCount('comments');
+            })
             ->columns([
                 static::getIdColumn(),
                 static::getNameColumn(),
+                static::getCommentsCountColumn(),
                 static::getPublishedAtColumn(),
+                static::getCreatedAtColumn(),
+                static::getUpdatedAtColumn(),
             ])
             ->filters([
                 Tables\Filters\TrashedFilter::make(),
             ])
             ->actions([
-                Tables\Actions\EditAction::make(),
+                static::getEditAction(),
+                static::getDeleteAction(),
             ])
             ->bulkActions([
                 Tables\Actions\BulkActionGroup::make([
@@ -123,10 +144,27 @@ class PostResource extends Resource
             ->sortable();
     }
 
+    public static function getCommentsCountColumn(): Tables\Columns\TextColumn
+    {
+        return Tables\Columns\TextColumn::make('comments_count')
+            ->sortable()
+            ->toggleable();
+    }
+
     public static function getPublishedAtColumn(): Tables\Columns\IconColumn
     {
         return Tables\Columns\IconColumn::make('published_at')
             ->boolean()
             ->sortable();
+    }
+
+    public static function getEditAction(): Tables\Actions\EditAction
+    {
+        return Tables\Actions\EditAction::make();
+    }
+
+    public static function getDeleteAction(): Tables\Actions\DeleteAction
+    {
+        return Tables\Actions\DeleteAction::make();
     }
 }
